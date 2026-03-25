@@ -28,7 +28,7 @@ Aplikacja będzie dostępna pod adresem:
 http://127.0.0.1:5000
 ```
 
-## Co powiedzieć na prezentacji
+## Prezntacja
 To jest **MVP demonstracyjne**, a nie pełna wersja produktu. Pokazuje główną logikę biznesową:
 1. użytkownik wprowadza wydarzenia,
 2. system sprawdza konflikty,

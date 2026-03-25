@@ -1,0 +1,29 @@
+{
+  "events": [
+    {
+      "title": "Algorytmy - wykład",
+      "category": "Uczelnia",
+      "location": "AGH C1",
+      "start": "08:00",
+      "end": "09:30",
+      "priority": 5,
+      "notes": "Obecność obowiązkowa"
+    },
+    {
+      "title": "Siłownia",
+      "category": "Aktywność",
+      "location": "Kraków",
+      "start": "12:30",
+      "end": "14:30",
+      "priority": 3,
+      "notes": ""
+    }
+  ],
+  "settings": {
+    "default_commute_minutes": 20,
+    "rest_buffer_minutes": 15,
+    "work_start": "07:00",
+    "work_end": "22:30",
+    "subscription": "premium"
+  }
+}

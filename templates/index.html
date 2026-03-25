@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DayLifePlanner MVP</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <div class="container">
+    <header class="hero">
+      <div>
+        <p class="badge">DayLifePlanner • MVP demo</p>
+        <h1>Inteligentne planowanie dnia</h1>
+        <p class="subtitle">Lokalna aplikacja demonstracyjna</p>
+      </div>
+      <div class="subscription-card">
+        <span>Aktywny plan</span>
+        <strong>{{ data.settings.subscription|capitalize }}</strong>
+        <small>Base / Premium / Enterprise</small>
+      </div>
+    </header>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div class="flash-wrapper">
+          {% for category, message in messages %}
+            <div class="flash {{ category }}">{{ message }}</div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+
+    <section class="grid top-grid">
+      <div class="panel">
+        <h2>Dodaj wydarzenie</h2>
+        <form method="post" action="{{ url_for('add_event') }}" class="form-grid">
+          <input name="title" placeholder="Nazwa wydarzenia" required>
+          <select name="category" required>
+            <option>Uczelnia</option>
+            <option>Praca</option>
+            <option>Aktywność</option>
+            <option>Odpoczynek</option>
+            <option>Spotkanie</option>
+          </select>
+          <input name="location" placeholder="Lokalizacja" required>
+          <input type="time" name="start" required>
+          <input type="time" name="end" required>
+          <select name="priority" required>
+            <option value="5">5 - krytyczny</option>
+            <option value="4">4 - wysoki</option>
+            <option value="3" selected>3 - średni</option>
+            <option value="2">2 - niski</option>
+            <option value="1">1 - bardzo niski</option>
+          </select>
+          <textarea name="notes" placeholder="Notatki (opcjonalnie)"></textarea>
+          <button type="submit">Dodaj do planu</button>
+        </form>
+      </div>
+
+      <div class="panel">
+        <h2>Ustawienia planowania</h2>
+        <form method="post" action="{{ url_for('update_settings') }}" class="form-grid">
+          <label>Domyślny czas dojazdu (min)
+            <input type="number" name="default_commute_minutes" value="{{ data.settings.default_commute_minutes }}" min="0" max="180" required>
+          </label>
+          <label>Minimalna przerwa (min)
+            <input type="number" name="rest_buffer_minutes" value="{{ data.settings.rest_buffer_minutes }}" min="0" max="120" required>
+          </label>
+          <label>Początek dnia
+            <input type="time" name="work_start" value="{{ data.settings.work_start }}" required>
+          </label>
+          <label>Koniec dnia
+            <input type="time" name="work_end" value="{{ data.settings.work_end }}" required>
+          </label>
+          <label>Subskrypcja
+            <select name="subscription">
+              <option value="base" {% if data.settings.subscription == 'base' %}selected{% endif %}>base</option>
+              <option value="premium" {% if data.settings.subscription == 'premium' %}selected{% endif %}>premium</option>
+              <option value="enterprise" {% if data.settings.subscription == 'enterprise' %}selected{% endif %}>enterprise</option>
+            </select>
+          </label>
+          <button type="submit">Zapisz ustawienia</button>
+        </form>
+        <form method="post" action="{{ url_for('reset_demo') }}">
+          <button class="secondary" type="submit">Przywróć dane demo</button>
+        </form>
+      </div>
+    </section>
+
+    <section class="metrics">
+      <div class="metric"><span>Wydarzenia</span><strong>{{ analysis.events|length }}</strong></div>
+      <div class="metric"><span>Konflikty</span><strong>{{ analysis.conflicts|length }}</strong></div>
+      <div class="metric"><span>Obciążenie</span><strong>{{ analysis.total_load_hours }} h</strong></div>
+      <div class="metric"><span>Wolne okna</span><strong>{{ analysis.free_slots|length }}</strong></div>
+    </section>
+
+    <section class="grid bottom-grid">
+      <div class="panel wide">
+        <h2>Wygenerowany plan dnia</h2>
+        <div class="timeline">
+          {% for event in analysis.events %}
+            <div class="timeline-item {{ 'problem' if event.status != 'OK' else '' }}">
+              <div class="time">{{ event.start }}–{{ event.end }}</div>
+              <div class="content">
+                <div class="title-row">
+                  <h3>{{ event.title }}</h3>
+                  <span class="pill">{{ event.category }}</span>
+                  <span class="pill priority">Priorytet {{ event.priority }}</span>
+                </div>
+                <p><strong>Lokalizacja:</strong> {{ event.location }}</p>
+                <p><strong>Status:</strong> {{ event.status }}</p>
+                <p><strong>Czas trwania:</strong> {{ event.duration_minutes }} min</p>
+                {% if event.travel_needed_before > 0 %}
+                  <p><strong>Wymagany bufor przed wydarzeniem:</strong> {{ event.travel_needed_before }} min</p>
+                {% endif %}
+                {% if event.notes %}<p><strong>Notatki:</strong> {{ event.notes }}</p>{% endif %}
+                <form method="post" action="{{ url_for('delete_event', event_id=loop.index0) }}">
+                  <button class="danger" type="submit">Usuń</button>
+                </form>
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>Analiza i rekomendacje</h2>
+        <h3>Wykryte problemy</h3>
+        <ul>
+          {% if analysis.conflicts %}
+            {% for conflict in analysis.conflicts %}
+              <li>{{ conflict.message }}</li>
+            {% endfor %}
+          {% else %}
+            <li>Brak konfliktów czasowych.</li>
+          {% endif %}
+        </ul>
+
+        <h3>Rekomendacje</h3>
+        <ul>
+          {% for recommendation in analysis.recommendations %}
+            <li>{{ recommendation }}</li>
+          {% endfor %}
+        </ul>
+
+        <h3>Wolne okna czasowe</h3>
+        <ul>
+          {% for slot in analysis.free_slots %}
+            <li>{{ slot }}</li>
+          {% endfor %}
+        </ul>
+      </div>
+    </section>
+
+    <section class="panel enterprise-box">
+      <h2>Pokaz wersji enterprise</h2>
+      <p>
+        W tej wersji demonstracyjnej pokazujemy miejsce na przyszłe integracje z Outlook, Teams i planowaniem spotkań międzyfirmowych.
+      </p>
+    </section>
+  </div>
+</body>
+</html>
